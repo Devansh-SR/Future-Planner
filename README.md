@@ -19,6 +19,9 @@
 - **Frontend**: Tailwind CSS (Optimized for Dark Mode), JavaScript (ES6)
 - **Libraries**: FullCalendar, Canvas-Confetti, html2pdf.js
 
+### 🖱️ Quick Launch (Windows)
+Simply double-click `launch_planner.bat` to automatically start the server and open the dashboard in your browser.
+
 ## 📋 Installation
 1. **Clone**:
    ```bash

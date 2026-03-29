@@ -3,7 +3,11 @@ import json
 import os
 
 app = Flask(__name__)
-DATA_FILE = 'data.json'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_FILE = os.path.join(BASE_DIR, 'data.json')
+
+
+print(f"📂 Future Planner is using data from: {DATA_FILE}")
 
 if not os.path.exists(DATA_FILE):
     with open(DATA_FILE, 'w') as f:

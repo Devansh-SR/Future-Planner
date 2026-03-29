@@ -1,12 +1,8 @@
 @echo off
+:: Move the command prompt's focus to the folder where this script is
+cd /d "%~dp0"
 title Future Planner Command Center
-echo 🚀 Initializing Future Planner...
-echo 🛡️ Accessing Local Intel...
-
-:: 1. Open the browser to the local address
+echo 🚀 Launching from: %cd%
 start http://127.0.0.1:5000
-
-:: 2. Start the Flask Backend
 python app.py
-
 pause

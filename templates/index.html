@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en" id="html-tag" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Future Planner | Mission Control</title>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <style>
+        .fc { border-radius: 1.5rem; overflow: hidden; border: none !important; }
+        .dark .fc { --fc-border-color: #1e293b; --fc-today-bg-color: #0f172a; color: #f1f5f9; }
+        .light .fc { --fc-border-color: #e2e8f0; --fc-today-bg-color: #f8fafc; color: #1e293b; }
+        .fc-event { cursor: pointer; transition: all 0.2s; border: none !important; }
+        .fc-event:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-[#020617] text-slate-900 dark:text-slate-100 p-4 lg:p-8 min-h-screen transition-all duration-300 font-sans">
+
+    <div class="max-w-[1600px] mx-auto flex flex-col xl:flex-row gap-8">
+        
+        <div class="w-full xl:w-1/4 space-y-6">
+            <div class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl sticky top-8">
+                <h3 class="text-xl font-black mb-6 flex items-center gap-2">📊 Project Health</h3>
+                <div id="projectStats" class="space-y-6 custom-scrollbar max-h-[70vh] overflow-y-auto pr-2">
+                    <p class="text-slate-500 text-xs italic">Syncing intel...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full xl:w-3/4">
+            <div class="flex flex-col lg:flex-row justify-between items-center gap-6 mb-8 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl">
+                <div class="flex flex-col md:flex-row items-center gap-6 w-full lg:w-auto">
+                    <div>
+                        <h1 class="text-3xl font-black bg-gradient-to-r from-blue-500 to-emerald-400 bg-clip-text text-transparent">Future Planner</h1>
+                        <p id="countdown" class="text-[10px] font-mono text-slate-400 mt-1 uppercase tracking-widest">Dashboard Active</p>
+                    </div>
+                    <input type="text" id="taskSearch" oninput="searchTasks()" placeholder="Search Intel..." class="w-full md:w-64 pl-4 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-blue-500 rounded-xl outline-none text-sm">
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="exportToPDF()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl font-bold shadow-lg transition">📥 Export</button>
+                    <button onclick="toggleTheme()" class="bg-slate-100 dark:bg-slate-800 p-2.5 rounded-xl"><span id="theme-icon">🌙</span></button>
+                    <button onclick="toggleModal('taskModal')" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg transition">+ New Objective</button>
+                </div>
+            </div>
+
+            <div id="calendar" class="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-2xl"></div>
+        </div>
+    </div>
+
+    <div id="taskModal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 w-full max-w-lg shadow-2xl">
+            <h2 class="text-2xl font-bold mb-6 text-blue-500">Deploy New Objective</h2>
+            <input id="taskTitle" type="text" placeholder="Mission Name" class="w-full p-4 mb-4 bg-slate-100 dark:bg-slate-800 rounded-2xl outline-none">
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <select id="taskCategory" class="p-3.5 bg-slate-100 dark:bg-slate-800 rounded-xl outline-none">
+                    <option value="Academic">📚 Academic</option>
+                    <option value="Project">💻 Project</option>
+                    <option value="Personal" selected>👤 Personal</option>
+                </select>
+                <select id="taskPriority" class="p-3.5 bg-slate-100 dark:bg-slate-800 rounded-xl outline-none">
+                    <option value="#ef4444">High</option>
+                    <option value="#f59e0b" selected>Medium</option>
+                    <option value="#10b981">Low</option>
+                </select>
+            </div>
+            <textarea id="taskNotes" rows="3" placeholder="Methodology/Snippets..." class="w-full p-4 mb-4 bg-slate-100 dark:bg-slate-800 rounded-2xl outline-none font-mono text-xs"></textarea>
+            <div class="mb-6">
+                <input id="taskDate" type="date" class="w-full p-3.5 mb-4 bg-slate-100 dark:bg-slate-800 rounded-xl outline-none">
+                <input id="taskProgress" type="range" min="0" max="100" value="0" class="w-full h-2 accent-blue-500" oninput="document.getElementById('progVal').innerText = this.value + '%'">
+                <div id="progVal" class="text-center font-mono text-sm text-blue-500">0%</div>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="toggleModal('taskModal')" class="flex-1 font-bold text-slate-400">Abort</button>
+                <button onclick="addTask()" class="flex-[2] bg-blue-600 py-3 rounded-2xl font-bold text-white shadow-lg">Save Intel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="detailModal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 w-full max-w-md shadow-2xl">
+            <h2 id="detailTitle" class="text-2xl font-bold mb-4"></h2>
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl text-center">
+                    <div class="text-[10px] text-slate-500 font-bold uppercase mb-1">Horizon</div>
+                    <div id="daysLeft" class="text-sm font-bold">...</div>
+                </div>
+                <div class="bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl text-center">
+                    <div class="text-[10px] text-slate-500 font-bold uppercase mb-1">Status</div>
+                    <div id="statusLabel" class="text-sm font-bold text-blue-500">Active</div>
+                </div>
+            </div>
+            <div id="detailNotes" class="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl font-mono text-xs mb-6 max-h-40 overflow-y-auto whitespace-pre-wrap border border-slate-200 dark:border-slate-700"></div>
+            
+            <label class="text-[10px] text-slate-500 uppercase font-bold ml-1">Update Progress</label>
+            <input id="updateSlider" type="range" min="0" max="100" class="w-full h-2 mt-2 accent-blue-500" oninput="document.getElementById('updateVal').innerText = this.value + '%'">
+            <div id="updateVal" class="text-center font-mono text-sm text-blue-500 mb-6">0%</div>
+
+            <button onclick="updateTaskProgress()" class="w-full bg-blue-600 text-white py-3 rounded-2xl font-bold shadow-lg mb-3">Sync Progress</button>
+            <div class="flex gap-3">
+                <button onclick="deleteCurrentTask()" class="flex-1 text-red-500 font-bold text-sm bg-red-500/10 py-3 rounded-2xl">Purge</button>
+                <button onclick="toggleModal('detailModal')" class="flex-1 font-bold text-sm bg-slate-200 dark:bg-slate-800 py-3 rounded-2xl">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let calendar, currentSelectedEvent = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+                events: '/get_tasks',
+                eventClick: (info) => showDetails(info.event),
+                datesSet: () => refreshDashboard(),
+                eventContent: (arg) => {
+                    let prog = arg.event.extendedProps.progress || 0;
+                    let color = arg.event.backgroundColor;
+                    return {
+                        html: `<div class="p-2 border-l-4" style="border-color: ${color}">
+                                <div class="font-black text-[9px] uppercase truncate text-slate-900 dark:text-white">${arg.event.title}</div>
+                                <div class="w-full bg-slate-200 dark:bg-slate-700 h-1 mt-1"><div style="width:${prog}%; background-color:${color}" class="h-full"></div></div>
+                               </div>`
+                    };
+                }
+            });
+            calendar.render();
+        });
+
+        async function addTask() {
+            const payload = {
+                title: document.getElementById('taskTitle').value,
+                start: document.getElementById('taskDate').value,
+                progress: parseInt(document.getElementById('taskProgress').value),
+                color: document.getElementById('taskPriority').value,
+                category: document.getElementById('taskCategory').value,
+                notes: document.getElementById('taskNotes').value
+            };
+            if(!payload.title || !payload.start) return;
+            await fetch('/save_task', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            calendar.addEvent(payload);
+            if(payload.progress === 100) confetti({ particleCount: 150, spread: 70 });
+            toggleModal('taskModal');
+            refreshDashboard();
+        }
+
+        function showDetails(event) {
+            currentSelectedEvent = event;
+            const prog = event.extendedProps.progress || 0;
+            const diff = Math.ceil((new Date(event.startStr) - new Date()) / (1000 * 60 * 60 * 24));
+            document.getElementById('detailTitle').innerText = event.title;
+            document.getElementById('detailNotes').innerText = event.extendedProps.notes || "No extra data.";
+            document.getElementById('updateSlider').value = prog;
+            document.getElementById('updateVal').innerText = prog + '%';
+            document.getElementById('daysLeft').innerText = diff < 0 ? "Overdue" : `${diff} Days Left`;
+            document.getElementById('statusLabel').innerText = prog === 100 ? "Completed" : "Active";
+            toggleModal('detailModal');
+        }
+
+        async function updateTaskProgress() {
+            const newProg = parseInt(document.getElementById('updateSlider').value);
+            const payload = { 
+                ...currentSelectedEvent.extendedProps, 
+                title: currentSelectedEvent.title, 
+                start: currentSelectedEvent.startStr, 
+                progress: newProg,
+                backgroundColor: currentSelectedEvent.backgroundColor 
+            };
+            await fetch('/save_task', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            currentSelectedEvent.setExtendedProp('progress', newProg);
+            if(newProg === 100) confetti({ particleCount: 150 });
+            toggleModal('detailModal');
+            calendar.refetchEvents();
+            refreshDashboard();
+        }
+
+        async function deleteCurrentTask() {
+            if(!confirm("Purge Intel?")) return;
+            await fetch('/delete_task', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ title: currentSelectedEvent.title, start: currentSelectedEvent.startStr }) });
+            currentSelectedEvent.remove();
+            toggleModal('detailModal');
+            refreshDashboard();
+        }
+
+        function refreshDashboard() {
+            const stats = document.getElementById('projectStats');
+            const categories = { Academic: [], Project: [], Personal: [] };
+            calendar.getEvents().forEach(e => categories[e.extendedProps.category || 'Personal'].push(e));
+            stats.innerHTML = '';
+            Object.keys(categories).forEach(cat => {
+                const list = categories[cat];
+                if(list.length === 0) return;
+                const avg = Math.round(list.reduce((a, c) => a + (c.extendedProps.progress || 0), 0) / list.length);
+                const color = cat === 'Academic' ? 'amber' : cat === 'Project' ? 'blue' : 'emerald';
+                stats.innerHTML += `<div class="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <div class="flex justify-between items-center mb-2"><span class="text-[10px] font-black uppercase text-slate-400">${cat}</span><span class="text-xs font-mono text-${color}-500">${avg}%</span></div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden"><div class="bg-${color}-500 h-full transition-all duration-700" style="width: ${avg}%"></div></div>
+                </div>`;
+            });
+        }
+
+        function searchTasks() {
+            const query = document.getElementById('taskSearch').value.toLowerCase();
+            calendar.getEvents().forEach(e => {
+                const match = e.title.toLowerCase().includes(query) || (e.extendedProps.notes || "").toLowerCase().includes(query);
+                e.setProp('display', match ? 'auto' : 'none');
+            });
+        }
+
+        function exportToPDF() {
+            html2pdf().set({ margin: 0.2, filename: 'Future_Planner.pdf', jsPDF: { orientation: 'landscape' } }).from(document.getElementById('calendar')).save();
+        }
+
+        function toggleTheme() {
+            const isDark = document.getElementById('html-tag').classList.toggle('dark');
+            document.getElementById('theme-icon').innerText = isDark ? '🌙' : '☀️';
+        }
+
+        function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
+    </script>
+</body>
+</html>

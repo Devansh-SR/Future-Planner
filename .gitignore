@@ -1,0 +1,20 @@
+# Database (Keep your personal tasks private)
+data.json
+
+# Python System Files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environments
+venv/
+env/
+.env
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Exported PDFs
+*.pdf
